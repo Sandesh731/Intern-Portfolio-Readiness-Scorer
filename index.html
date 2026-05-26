@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graphura's Portfolio Readiness Scorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;
+  --surface:#0d1220;
+  --card:#111827;
+  --border:#1e2d4a;
+  --border2:#253550;
+  --text:#e8eef7;
+  --muted:#5a7a99;
+  --accent:#00d4aa;
+  --accent2:#3b82f6;
+  --accent3:#f59e0b;
+  --ready:#00d4aa;
+  --almost:#f59e0b;
+  --needs:#ef4444;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* Animated background */
+.bg-grid{
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,170,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,170,0.03) 1px,transparent 1px);
+  background-size:50px 50px;
+  pointer-events:none;
+  z-index:0;
+  animation:gridMove 20s linear infinite;
+}
+@keyframes gridMove{from{background-position:0 0}to{background-position:50px 50px}}
+
+.bg-glow{
+  position:fixed;
+  width:600px;height:600px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,170,0.04) 0%,transparent 70%);
+  top:-200px;left:-200px;
+  pointer-events:none;
+  z-index:0;
+  animation:glowMove 8s ease-in-out infinite alternate;
+}
+@keyframes glowMove{from{transform:translate(0,0)}to{transform:translate(200px,100px)}}
+
+.content{position:relative;z-index:1}
+
+/* Top bar */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 40px;
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);
+  background:rgba(8,12,20,0.8);
+  position:sticky;top:0;z-index:100;
+}
+.topbar-logo{
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-0.5px;
+}
+.topbar-tag{
+  font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;
+}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--accent);
+  animation:pulse 2s ease-in-out infinite;display:inline-block;margin-right:8px;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+
+/* Hero */
+.hero{
+  text-align:center;padding:80px 20px 60px;
+  max-width:700px;margin:0 auto;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,212,170,0.08);
+  border:1px solid rgba(0,212,170,0.2);
+  color:var(--accent);font-size:12px;letter-spacing:2px;
+  text-transform:uppercase;padding:6px 18px;border-radius:30px;
+  margin-bottom:28px;
+  animation:fadeDown 0.6s ease forwards;
+}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+.hero h1{
+  font-family:'Syne',sans-serif;font-size:clamp(36px,6vw,64px);font-weight:800;
+  line-height:1.05;margin-bottom:20px;letter-spacing:-1px;
+  animation:fadeUp 0.7s ease 0.1s both;
+}
+.hero h1 .grad{
+  background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 50%,#a78bfa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{
+  font-size:17px;color:var(--muted);line-height:1.7;max-width:480px;margin:0 auto 40px;
+  animation:fadeUp 0.7s ease 0.2s both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Upload zone */
+.upload-zone{
+  max-width:580px;margin:0 auto 32px;
+  border:2px dashed var(--border2);
+  border-radius:20px;padding:48px 40px;
+  text-align:center;cursor:pointer;
+  transition:all 0.3s ease;
+  background:rgba(13,18,32,0.8);
+  position:relative;overflow:hidden;
+  animation:fadeUp 0.7s ease 0.3s both;
+}
+.upload-zone::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,212,170,0.03),rgba(59,130,246,0.03));
+  opacity:0;transition:opacity 0.3s;
+}
+.upload-zone:hover{
+  border-color:var(--accent);
+  box-shadow:0 0 40px rgba(0,212,170,0.08);
+  transform:translateY(-2px);
+}
+.upload-zone:hover::before{opacity:1}
+.upload-zone.dragging{
+  border-color:var(--accent);
+  background:rgba(0,212,170,0.05);
+  transform:scale(1.01);
+}
+.upload-icon-wrap{
+  width:72px;height:72px;border-radius:18px;
+  background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.2);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;font-size:28px;
+  transition:all 0.3s;
+}
+.upload-zone:hover .upload-icon-wrap{
+  background:rgba(0,212,170,0.12);
+  transform:scale(1.05) rotate(-5deg);
+}
+.upload-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px}
+.upload-sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.upload-formats{
+  display:flex;justify-content:center;gap:8px;margin-bottom:24px;
+}
+.format-tag{
+  font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:1px;
+  background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);
+  color:#93c5fd;
+}
+.btn-choose{
+  background:linear-gradient(135deg,var(--accent),#00b894);
+  color:#080c14;border:none;padding:12px 28px;border-radius:12px;
+  font-size:14px;font-weight:700;cursor:pointer;
+  font-family:'DM Sans',sans-serif;letter-spacing:0.3px;
+  transition:all 0.2s;
+}
+.btn-choose:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,212,170,0.3)}
+.file-chosen{
+  margin-top:16px;font-size:13px;color:var(--accent);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(0,212,170,0.08);padding:10px 20px;border-radius:10px;
+  display:none;
+}
+input[type=file]{display:none}
+
+/* Score button */
+.btn-score{
+  display:none;width:100%;max-width:580px;margin:0 auto 60px;
+  background:linear-gradient(135deg,#1a2744,#0f1e3a);
+  border:1px solid var(--border2);
+  color:var(--text);padding:18px;border-radius:16px;
+  font-size:16px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  transition:all 0.3s;position:relative;overflow:hidden;
+  animation:none;
+}
+.btn-score::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  opacity:0;transition:opacity 0.3s;
+}
+.btn-score:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,212,170,0.15)}
+.btn-score:hover::before{opacity:0.08}
+.btn-score span{position:relative;z-index:1}
+.btn-score:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+
+/* Loader */
+.loader{display:none;text-align:center;padding:60px 20px}
+.loader-rings{position:relative;width:64px;height:64px;margin:0 auto 24px}
+.loader-rings div{
+  position:absolute;inset:0;border-radius:50%;border:2px solid transparent;
+  animation:spin 1.2s linear infinite;
+}
+.loader-rings div:nth-child(1){border-top-color:var(--accent);animation-duration:1.2s}
+.loader-rings div:nth-child(2){border-right-color:var(--accent2);animation-duration:1.8s;inset:8px}
+.loader-rings div:nth-child(3){border-bottom-color:#a78bfa;animation-duration:2.4s;inset:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{color:var(--muted);font-size:14px;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Error */
+.error-box{
+  max-width:580px;margin:0 auto 20px;
+  background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);
+  border-radius:14px;padding:16px 20px;color:#fca5a5;font-size:14px;
+  display:none;text-align:center;
+}
+
+/* Results */
+.results{
+  max-width:960px;margin:0 auto;padding:0 20px 80px;
+  display:none;
+}
+
+/* Score hero */
+.score-hero{
+  display:flex;flex-direction:column;align-items:center;
+  padding:48px 20px;margin-bottom:24px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:24px;position:relative;overflow:hidden;
+}
+.score-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center top,rgba(0,212,170,0.05),transparent 60%);
+}
+.score-ring{position:relative;width:180px;height:180px;margin-bottom:24px}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring-num{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.score-big{font-family:'Syne',sans-serif;font-size:52px;font-weight:800;line-height:1}
+.score-label{font-size:12px;color:var(--muted);letter-spacing:1px;margin-top:4px}
+.cat-badge{
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+  padding:10px 28px;border-radius:30px;margin-bottom:12px;
+  letter-spacing:0.3px;
+}
+.cat-ready{background:rgba(0,212,170,0.12);color:var(--ready);border:1px solid rgba(0,212,170,0.25)}
+.cat-almost{background:rgba(245,158,11,0.12);color:var(--almost);border:1px solid rgba(245,158,11,0.25)}
+.cat-needs{background:rgba(239,68,68,0.12);color:var(--needs);border:1px solid rgba(239,68,68,0.25)}
+.domain-text{font-size:13px;color:var(--muted)}
+.domain-text span{color:var(--text)}
+
+/* Metrics grid */
+.metrics-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:12px;margin-bottom:20px;
+}
+.metric-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:18px 16px;text-align:center;
+  transition:all 0.2s;
+}
+.metric-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.metric-icon{font-size:22px;margin-bottom:8px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:0.5px;text-transform:uppercase}
+.metric-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700}
+
+/* Two col grid */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px}
+
+/* Card */
+.dash-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:24px;
+}
+.dash-card-title{
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+  margin-bottom:18px;display:flex;align-items:center;gap:10px;
+  color:var(--text);
+}
+.dash-card-title .icon{
+  width:32px;height:32px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+
+/* Compare */
+.compare-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);margin-bottom:10px;
+}
+.compare-left{font-size:13px;color:var(--muted)}
+.compare-right{display:flex;gap:8px;align-items:center}
+.c-pill{font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px}
+.c-rule{background:rgba(59,130,246,0.1);color:#93c5fd;border:1px solid rgba(59,130,246,0.2)}
+.c-ml{background:rgba(0,212,170,0.1);color:var(--accent);border:1px solid rgba(0,212,170,0.2)}
+
+/* Tools */
+.tool-tag{
+  display:inline-block;margin:4px;padding:5px 14px;border-radius:20px;
+  font-size:12px;font-weight:500;
+  background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);
+  color:#93c5fd;transition:all 0.2s;
+}
+.tool-tag:hover{background:rgba(59,130,246,0.15);transform:translateY(-1px)}
+
+/* Bars */
+.bar-item{margin-bottom:14px}
+.bar-header{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+.bar-track{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;width:0;transition:width 1.5s cubic-bezier(0.16,1,0.3,1)}
+
+/* Recommendations */
+.rec-group{margin-bottom:16px}
+.rec-group-title{
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;
+}
+.rec-item{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:12px 14px;border-radius:10px;margin-bottom:8px;
+  border:1px solid;
+}
+.rec-strength{background:rgba(0,212,170,0.05);border-color:rgba(0,212,170,0.15)}
+.rec-weak{background:rgba(245,158,11,0.05);border-color:rgba(245,158,11,0.15)}
+.rec-suggest{background:rgba(59,130,246,0.05);border-color:rgba(59,130,246,0.15)}
+.rec-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.rec-text{font-size:13px;line-height:1.5;color:var(--muted)}
+
+/* Animations */
+.fade-in{animation:fadeUp 0.5s ease forwards}
+.fade-in-d1{animation:fadeUp 0.5s ease 0.1s both}
+.fade-in-d2{animation:fadeUp 0.5s ease 0.2s both}
+.fade-in-d3{animation:fadeUp 0.5s ease 0.3s both}
+.fade-in-d4{animation:fadeUp 0.5s ease 0.4s both}
+.fade-in-d5{animation:fadeUp 0.5s ease 0.5s both}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:600px){
+  .topbar{padding:14px 20px}
+  .hero{padding:48px 20px 40px}
+  .hero h1{font-size:32px}
+  .upload-zone{padding:32px 24px}
+  .metrics-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="content">
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-logo">PortfolioAI</div>
+  <div class="topbar-tag">Graphura India Private Limited</div>
+  <div style="font-size:12px;color:var(--muted);display:flex;align-items:center">
+    <span class="status-dot"></span>Live
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">✦ AI + Machine Learning Powered</div>
+  <h1>Resume Upload Karo<br><span class="grad">Instant Score Pao</span></h1>
+  <p>Tumhara resume analyze hoga — Rule-based scoring aur Random Forest ML model dono se result aayega.</p>
+</div>
+
+<!-- Upload -->
+<div style="max-width:580px;margin:0 auto;padding:0 20px">
+
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon-wrap">📄</div>
+    <div class="upload-title">Resume Drop Karo</div>
+    <div class="upload-sub">Ya click karke file choose karo</div>
+    <div class="upload-formats">
+      <span class="format-tag">PDF</span>
+      <span class="format-tag">DOCX</span>
+    </div>
+    <button class="btn-choose" onclick="event.stopPropagation();document.getElementById('fileInput').click()">
+      File Choose Karo
+    </button>
+    <div class="file-chosen" id="fileChosen">
+      <span>✓</span><span id="chosenName"></span>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,.docx">
+  </div>
+
+  <div style="text-align:center">
+    <button class="btn-score" id="btnScore" onclick="scoreResume()">
+      <span>🚀 &nbsp; CalculateScore &nbsp;→</span>
+    </button>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+</div>
+
+<!-- Loader -->
+<div class="loader" id="loader">
+  <div class="loader-rings">
+    <div></div><div></div><div></div>
+  </div>
+  <div class="loader-text">Analyzing Resume...</div>
+</div>
+
+<!-- Results -->
+<div class="results" id="results">
+
+  <!-- Score Hero -->
+  <div class="score-hero fade-in">
+    <div class="score-ring">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="80" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="12"/>
+        <circle id="scoreArc" cx="90" cy="90" r="80" fill="none" stroke="var(--accent)" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="502" stroke-dashoffset="502"
+          style="transition:stroke-dashoffset 1.8s cubic-bezier(0.16,1,0.3,1)"/>
+      </svg>
+      <div class="score-ring-num">
+        <div class="score-big" id="scoreNum" style="color:var(--accent)">0</div>
+        <div class="score-label">/ 100</div>
+      </div>
+    </div>
+    <div class="cat-badge" id="catBadge"></div>
+    <div class="domain-text">Domain detected: <span id="domainText">--</span></div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-grid fade-in-d1" id="metricsGrid"></div>
+
+  <!-- Compare + Tools -->
+  <div class="grid2">
+    <div class="dash-card fade-in-d2">
+      <div class="dash-card-title">
+        <div class="icon" style="background:rgba(59,130,246,0.12)">📊</div>
+        Score Comparison
+      </div>
+      <div id="compareBox"></div>
+    </div>
+    <div class="dash-card fade-in-d2">
+      <div class="dash-card-title">
+        <div class="icon" style="background:rgba(0,212,170,0.12)">🛠️</div>
+        Tools Detected
+      </div>
+      <div id="toolsBox"></div>
+    </div>
+  </div>
+
+  <!-- Bars + Reco -->
+  <div class="grid2">
+    <div class="dash-card fade-in-d3">
+      <div class="dash-card-title">
+        <div class="icon" style="background:rgba(167,139,250,0.12)">📈</div>
+        Score Breakdown
+      </div>
+      <div id="barsBox"></div>
+    </div>
+    <div class="dash-card fade-in-d3">
+      <div class="dash-card-title">
+        <div class="icon" style="background:rgba(245,158,11,0.12)">💡</div>
+        Recommendations
+      </div>
+      <div id="recoBox"></div>
+    </div>
+  </div>
+
+  <!-- Scan again -->
+  <div style="text-align:center;margin-top:32px" class="fade-in-d4">
+    <button onclick="resetApp()" style="
+      background:transparent;border:1px solid var(--border2);
+      color:var(--muted);padding:12px 28px;border-radius:12px;
+      font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;
+      transition:all 0.2s;
+    " onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+       onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+      ↺ &nbsp;Check Other Resume
+    </button>
+  </div>
+
+</div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+const btnScore = document.getElementById('btnScore');
+const fileChosen = document.getElementById('fileChosen');
+const chosenName = document.getElementById('chosenName');
+
+fileInput.addEventListener('change', function(){
+  if(this.files[0]){
+    chosenName.textContent = this.files[0].name;
+    fileChosen.style.display = 'flex';
+    btnScore.style.display = 'block';
+    uploadZone.style.borderColor = 'var(--accent)';
+  }
+});
+
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadZone.classList.add('dragging');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragging');
+  const file = e.dataTransfer.files[0];
+  if(file){
+    fileInput.files = e.dataTransfer.files;
+    chosenName.textContent = file.name;
+    fileChosen.style.display = 'flex';
+    btnScore.style.display = 'block';
+  }
+});
+
+async function scoreResume(){
+  const file = fileInput.files[0];
+  if(!file) return;
+
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('loader').style.display = 'block';
+  btnScore.disabled = true;
+
+  const formData = new FormData();
+  formData.append('resume', file);
+
+  try {
+    const res = await fetch('http://localhost:5000/score', {method:'POST', body:formData});
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    showResults(data);
+  } catch(e) {
+    const eb = document.getElementById('errorBox');
+    eb.textContent = '⚠️ Error: ' + e.message;
+    eb.style.display = 'block';
+  } finally {
+    document.getElementById('loader').style.display = 'none';
+    btnScore.disabled = false;
+  }
+}
+
+function animateCount(el, target, duration=1500){
+  let start = 0;
+  const step = timestamp => {
+    if(!start) start = timestamp;
+    const progress = Math.min((timestamp-start)/duration, 1);
+    const ease = 1 - Math.pow(1-progress, 4);
+    el.textContent = Math.round(ease * target);
+    if(progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function showResults(d){
+  const score = d.rule_score;
+  const cat = d.rule_category;
+
+  // Score ring
+  const arc = document.getElementById('scoreArc');
+  const offset = 502 - (score/100)*502;
+  const color = cat==='Job Ready' ? '#00d4aa' : cat==='Almost Ready' ? '#f59e0b' : '#ef4444';
+  arc.style.stroke = color;
+  setTimeout(() => arc.style.strokeDashoffset = offset, 100);
+
+  const scoreNumEl = document.getElementById('scoreNum');
+  scoreNumEl.style.color = color;
+  animateCount(scoreNumEl, score);
+
+  // Category badge
+  const badge = document.getElementById('catBadge');
+  badge.textContent = (cat==='Job Ready'?'✅ ':cat==='Almost Ready'?'⚡ ':'🔧 ') + cat;
+  badge.className = 'cat-badge ' + (cat==='Job Ready'?'cat-ready':cat==='Almost Ready'?'cat-almost':'cat-needs');
+
+  document.getElementById('domainText').textContent = d.domain;
+
+  // Metrics
+  document.getElementById('metricsGrid').innerHTML = `
+    <div class="metric-card fade-in">
+      <div class="metric-icon">📁</div>
+      <div class="metric-label">Projects</div>
+      <div class="metric-val" style="color:#a78bfa">${d.num_projects}</div>
+    </div>
+    <div class="metric-card fade-in">
+      <div class="metric-icon">🛠️</div>
+      <div class="metric-label">Tools</div>
+      <div class="metric-val" style="color:var(--accent2)">${d.tools_count}</div>
+    </div>
+    <div class="metric-card fade-in">
+      <div class="metric-icon">${d.has_certification?'✅':'❌'}</div>
+      <div class="metric-label">Certification</div>
+      <div class="metric-val" style="color:${d.has_certification?'var(--ready)':'var(--needs)'}">${d.has_certification?'Yes':'No'}</div>
+    </div>
+    <div class="metric-card fade-in">
+      <div class="metric-icon">${d.has_readme?'✅':'❌'}</div>
+      <div class="metric-label">README</div>
+      <div class="metric-val" style="color:${d.has_readme?'var(--ready)':'var(--needs)'}">${d.has_readme?'Yes':'No'}</div>
+    </div>
+    <div class="metric-card fade-in">
+      <div class="metric-icon">⭐</div>
+      <div class="metric-label">Proj Quality</div>
+      <div class="metric-val" style="color:var(--almost)">${d.project_quality_score}/10</div>
+    </div>
+    <div class="metric-card fade-in">
+      <div class="metric-icon">💻</div>
+      <div class="metric-label">Tech Score</div>
+      <div class="metric-val" style="color:var(--accent)">${d.technical_skill_score}/10</div>
+    </div>
+  `;
+
+  // Compare
+  document.getElementById('compareBox').innerHTML = `
+    <div class="compare-row">
+      <div class="compare-left">Rule-Based Score</div>
+      <div class="compare-right">
+        <span class="c-pill c-rule">${score}/100</span>
+        <span class="c-pill c-rule">${cat}</span>
+      </div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-left">ML Prediction</div>
+      <div class="compare-right">
+        <span class="c-pill c-ml">${d.ml_confidence}% confident</span>
+        <span class="c-pill c-ml">${d.ml_category}</span>
+      </div>
+    </div>
+  `;
+
+  // Tools
+  const toolsEl = document.getElementById('toolsBox');
+  if(d.tools_found && d.tools_found.length > 0){
+    toolsEl.innerHTML = d.tools_found.map(t => `<span class="tool-tag">${t}</span>`).join('');
+  } else {
+    toolsEl.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:8px 0">Resume mein tools clearly mention karo</p>';
+  }
+
+  // Bars
+  const bars = [
+    {label:'Project Quality', val:d.project_quality_score*10, color:'#00d4aa'},
+    {label:'Technical Skills', val:d.technical_skill_score*10, color:'#3b82f6'},
+    {label:'Tools Variety', val:Math.min(100,d.tools_count*14), color:'#a78bfa'},
+    {label:'Certification', val:d.has_certification*100, color:'#f59e0b'},
+    {label:'Documentation', val:d.has_readme*100, color:'#f97316'},
+  ];
+  document.getElementById('barsBox').innerHTML = bars.map(b => `
+    <div class="bar-item">
+      <div class="bar-header">
+        <span>${b.label}</span>
+        <span style="color:var(--text)">${Math.round(b.val)}%</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="background:${b.color}" data-width="${b.val}"></div>
+      </div>
+    </div>
+  `).join('');
+
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(b => {
+      b.style.width = b.dataset.width + '%';
+    });
+  }, 200);
+
+  // Recommendations
+  let recoHTML = '';
+  if(d.strengths.length > 0){
+    recoHTML += `<div class="rec-group"><div class="rec-group-title">Strengths</div>`;
+    recoHTML += d.strengths.map(s => `
+      <div class="rec-item rec-strength">
+        <div class="rec-icon">✅</div>
+        <div class="rec-text">${s}</div>
+      </div>`).join('');
+    recoHTML += '</div>';
+  }
+  if(d.weaknesses.length > 0){
+    recoHTML += `<div class="rec-group"><div class="rec-group-title">Improve Karo</div>`;
+    recoHTML += d.weaknesses.map(w => `
+      <div class="rec-item rec-weak">
+        <div class="rec-icon">⚠️</div>
+        <div class="rec-text">${w}</div>
+      </div>`).join('');
+    recoHTML += '</div>';
+  }
+  if(d.suggestions.length > 0){
+    recoHTML += `<div class="rec-group"><div class="rec-group-title">Suggestions</div>`;
+    recoHTML += d.suggestions.map(s => `
+      <div class="rec-item rec-suggest">
+        <div class="rec-icon">💡</div>
+        <div class="rec-text">${s}</div>
+      </div>`).join('');
+    recoHTML += '</div>';
+  }
+  document.getElementById('recoBox').innerHTML = recoHTML;
+
+  document.getElementById('results').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('results').scrollIntoView({behavior:'smooth'});
+  }, 100);
+}
+
+function resetApp(){
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+  fileChosen.style.display = 'none';
+  btnScore.style.display = 'none';
+  uploadZone.style.borderColor = 'var(--border2)';
+  fileInput.value = '';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
